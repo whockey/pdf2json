@@ -1,6 +1,6 @@
 var PDFJS = require("./lib/pdf.js"),
     nodeUtil = require("util"),
-	nodeEvents = require("events"),
+    nodeEvents = require("events"),
     _ = require("underscore"),
     fs = require('fs'),
     async = require("async");
@@ -16,9 +16,9 @@ var PDFParser = (function () {
 
     // constructor
     var cls = function (context) {
-		//call constructor for super class
-		nodeEvents.EventEmitter.call(this);
-	
+        //call constructor for super class
+        nodeEvents.EventEmitter.call(this);
+    
         // private
         var _id = _nextId++;
 
@@ -34,7 +34,7 @@ var PDFParser = (function () {
         this.processFieldInfoXML = false;//disable additional _fieldInfo.xml parsing and merging
     };
     // inherit from event emitter
-	nodeUtil.inherits(cls, nodeEvents.EventEmitter);
+    nodeUtil.inherits(cls, nodeEvents.EventEmitter);
 
     // public static
     cls.get_nextId = function () {
@@ -98,7 +98,7 @@ var PDFParser = (function () {
     };
 
     var fq = async.queue(function (task, callback) {
-        fs.readFile(task.path, callback);
+        callback(null, task.data)
      }, 250);
 
     // public (every instance will share the same method, but has no access to private fields defined in constructor)
@@ -116,6 +116,21 @@ var PDFParser = (function () {
 
 //        fs.readFile(pdfFilePath, _.bind(processPDFContent, this));
         fq.push({path: pdfFilePath}, _.bind(processPDFContent, this));
+    };
+
+    cls.prototype.loadBuffer = function (data, path, verbosity) {
+        nodeUtil.verbosity(verbosity);
+        nodeUtil.p2jinfo("about to load data ");
+
+        this.pdfFilePath = path;
+        if (this.processFieldInfoXML) {
+            this.PDFJS.tryLoadFieldInfoXML(path);
+        }
+
+        if (processBinaryCache.call(this))
+            return;
+
+        fq.push({data: data}, _.bind(processPDFContent, this));
     };
 
     cls.prototype.destroy = function() {
